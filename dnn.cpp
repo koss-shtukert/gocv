@@ -134,14 +134,14 @@ void Net_ForwardLayers(Net net, struct Mats* outputBlobs, struct CStrings outBlo
             names.push_back(cv::String(outBlobNames.strs[i]));
         }
         net->forward(blobs, names);
-    
+
         // copy blobs into outputBlobs
         outputBlobs->mats = new Mat[blobs.size()];
-    
+
         for (size_t i = 0; i < blobs.size(); ++i) {
             outputBlobs->mats[i] = new cv::Mat(blobs[i]);
         }
-    
+
         outputBlobs->length = (int)blobs.size();
     } catch(const cv::Exception& e){
         setExceptionInfo(e.code, e.what());
@@ -178,11 +178,11 @@ void Net_GetUnconnectedOutLayers(Net net, IntVector* res) {
     try {
         std::vector< int > cids(net->getUnconnectedOutLayers());
         int* ids = new int[cids.size()];
-        
+
         for (size_t i = 0; i < cids.size(); ++i) {
             ids[i] = cids[i];
         }
-    
+
         res->length = cids.size();
         res->val = ids;
     } catch(const cv::Exception& e){
@@ -194,11 +194,11 @@ void Net_GetLayerNames(Net net, CStrings* names) {
     try {
         std::vector< cv::String > cstrs(net->getLayerNames());
         const char **strs = new const char*[cstrs.size()];
-    
+
         for (size_t i = 0; i < cstrs.size(); ++i) {
             strs[i] = cstrs[i].c_str();
         }
-    
+
         names->length = cstrs.size();
         names->strs = strs;
     } catch(const cv::Exception& e){
@@ -215,8 +215,8 @@ struct Rect Net_BlobRectToImageRect(struct Rect rect, Size originalSize, double 
         cv::dnn::DataLayout dl = static_cast<cv::dnn::DataLayout>(dataLayout);
         cv::dnn::ImagePaddingMode pm = static_cast<cv::dnn::ImagePaddingMode>(paddingMode);
         cv::Scalar bv(borderValue.val1, borderValue.val2, borderValue.val3, borderValue.val4);
-        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm, bv);
-    
+        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm);
+
         cv::Rect bRect = params.blobRectToImageRect(cv::Rect(rect.x, rect.y, rect.width, rect.height), cv::Size(originalSize.width, originalSize.height));
         Rect r = {bRect.x, bRect.y, bRect.width, bRect.height};
         return r;
@@ -239,24 +239,24 @@ struct Rects Net_BlobRectsToImageRects(struct Rects rects, Size originalSize, do
                 rects.rects[i].height
             ));
         }
-    
+
         cv::Scalar sf(scalefactor);
         cv::Size sz(size.width, size.height);
         cv::Scalar cm(mean.val1, mean.val2, mean.val3, mean.val4);
         cv::dnn::DataLayout dl = static_cast<cv::dnn::DataLayout>(dataLayout);
         cv::dnn::ImagePaddingMode pm = static_cast<cv::dnn::ImagePaddingMode>(paddingMode);
         cv::Scalar bv(borderValue.val1, borderValue.val2, borderValue.val3, borderValue.val4);
-        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm, bv);
-    
+        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm);
+
         std::vector<cv::Rect> detected;
         params.blobRectsToImageRects(_cRects, detected, cv::Size(originalSize.width, originalSize.height));
         Rect* drects = new Rect[detected.size()];
-    
+
         for (size_t i = 0; i < detected.size(); ++i) {
             Rect r = {detected[i].x, detected[i].y, detected[i].width, detected[i].height};
             drects[i] = r;
         }
-    
+
         Rects ret = {drects, (int)detected.size()};
         return ret;
     } catch(const cv::Exception& e){
@@ -288,8 +288,8 @@ Mat Net_BlobFromImageWithParams(Mat image, double scalefactor, Size size, Scalar
         cv::dnn::DataLayout dl = static_cast<cv::dnn::DataLayout>(dataLayout);
         cv::dnn::ImagePaddingMode pm = static_cast<cv::dnn::ImagePaddingMode>(paddingMode);
         cv::Scalar bv(borderValue.val1, borderValue.val2, borderValue.val3, borderValue.val4);
-        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm, bv);
-    
+        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm);
+
         return new cv::Mat(cv::dnn::blobFromImageWithParams(*image, params));
     } catch(const cv::Exception& e){
         setExceptionInfo(e.code, e.what());
@@ -301,14 +301,14 @@ void Net_BlobFromImages(struct Mats images, Mat blob, double scalefactor, Size s
                        Scalar mean, bool swapRB, bool crop, int ddepth) {
     try {
         std::vector<cv::Mat> imgs;
-    
+
         for (int i = 0; i < images.length; ++i) {
             imgs.push_back(*images.mats[i]);
         }
-    
+
         cv::Size sz(size.width, size.height);
         cv::Scalar cm = cv::Scalar(mean.val1, mean.val2, mean.val3, mean.val4);
-    
+
         // ignore the passed in ddepth, just use default.
         cv::dnn::blobFromImages(imgs, *blob, scalefactor, sz, cm, swapRB, crop);
     } catch(const cv::Exception& e){
@@ -320,19 +320,19 @@ void Net_BlobFromImagesWithParams(struct Mats images, Mat blob, double scalefact
                        Scalar mean, bool swapRB, int ddepth, int dataLayout, int paddingMode, Scalar borderValue) {
     try {
         std::vector<cv::Mat> imgs;
-    
+
         for (int i = 0; i < images.length; ++i) {
             imgs.push_back(*images.mats[i]);
         }
-    
+
         cv::Scalar sf(scalefactor);
         cv::Size sz(size.width, size.height);
         cv::Scalar cm(mean.val1, mean.val2, mean.val3, mean.val4);
         cv::dnn::DataLayout dl = static_cast<cv::dnn::DataLayout>(dataLayout);
         cv::dnn::ImagePaddingMode pm = static_cast<cv::dnn::ImagePaddingMode>(paddingMode);
         cv::Scalar bv(borderValue.val1, borderValue.val2, borderValue.val3, borderValue.val4);
-        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm, bv);
-    
+        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm);
+
         cv::dnn::blobFromImagesWithParams(imgs, *blob, params);
     } catch(const cv::Exception& e){
         setExceptionInfo(e.code, e.what());
@@ -344,7 +344,7 @@ void Net_ImagesFromBlob(Mat blob_, struct Mats* images_) {
         std::vector<cv::Mat> imgs;
         cv::dnn::imagesFromBlob(*blob_, imgs);
         images_->mats = new Mat[imgs.size()];
-    
+
         for (size_t i = 0; i < imgs.size(); ++i) {
             images_->mats[i] = new cv::Mat(imgs[i]);
         }
@@ -430,25 +430,25 @@ void NMSBoxes(struct Rects bboxes, FloatVector scores, float score_threshold, fl
                 bboxes.rects[i].height
             ));
         }
-    
+
         std::vector<float> _scores;
-    
+
         float* f;
         int i;
         for (i = 0, f = scores.val; i < scores.length; ++f, ++i) {
             _scores.push_back(*f);
         }
-    
+
         std::vector<int> _indices(indices->length);
-    
+
         cv::dnn::NMSBoxes(_bboxes, _scores, score_threshold, nms_threshold, _indices, 1.f, 0);
-    
+
         int* ptr = new int[_indices.size()];
-    
+
         for (size_t i=0; i<_indices.size(); ++i) {
             ptr[i] = _indices[i];
         }
-    
+
         indices->length = _indices.size();
         indices->val = ptr;
     } catch(const cv::Exception& e){
@@ -468,25 +468,25 @@ void NMSBoxesWithParams(struct Rects bboxes, FloatVector scores, const float sco
                 bboxes.rects[i].height
             ));
         }
-    
+
         std::vector<float> _scores;
-    
+
         float* f;
         int i;
         for (i = 0, f = scores.val; i < scores.length; ++f, ++i) {
             _scores.push_back(*f);
         }
-    
+
         std::vector<int> _indices(indices->length);
-    
+
         cv::dnn::NMSBoxes(_bboxes, _scores, score_threshold, nms_threshold, _indices, eta, top_k);
-    
+
         int* ptr = new int[_indices.size()];
-    
+
         for (size_t i=0; i<_indices.size(); ++i) {
             ptr[i] = _indices[i];
         }
-    
+
         indices->length = _indices.size();
         indices->val = ptr;
     } catch(const cv::Exception& e){
