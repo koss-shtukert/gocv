@@ -209,15 +209,16 @@ void Net_GetLayerNames(Net net, CStrings* names) {
 struct Rect Net_BlobRectToImageRect(struct Rect rect, Size originalSize, double scalefactor, Size size, Scalar mean, bool swapRB,
                     int ddepth, int dataLayout, int paddingMode, Scalar borderValue) {
     try {
-        cv::Scalar sf(scalefactor);
-        cv::Size sz(size.width, size.height);
-        cv::Scalar cm(mean.val1, mean.val2, mean.val3, mean.val4);
-        cv::dnn::DataLayout dl = static_cast<cv::dnn::DataLayout>(dataLayout);
-        cv::dnn::ImagePaddingMode pm = static_cast<cv::dnn::ImagePaddingMode>(paddingMode);
-        cv::Scalar bv(borderValue.val1, borderValue.val2, borderValue.val3, borderValue.val4);
-        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm);
+        float xRatio = static_cast<float>(originalSize.width) / static_cast<float>(size.width);
+        float yRatio = static_cast<float>(originalSize.height) / static_cast<float>(size.height);
 
-        cv::Rect bRect = params.blobRectToImageRect(cv::Rect(rect.x, rect.y, rect.width, rect.height), cv::Size(originalSize.width, originalSize.height));
+        cv::Rect bRect(
+            static_cast<int>(rect.x * xRatio),
+            static_cast<int>(rect.y * yRatio),
+            static_cast<int>(rect.width * xRatio),
+            static_cast<int>(rect.height * yRatio)
+        );
+
         Rect r = {bRect.x, bRect.y, bRect.width, bRect.height};
         return r;
     } catch(const cv::Exception& e){
@@ -230,34 +231,18 @@ struct Rect Net_BlobRectToImageRect(struct Rect rect, Size originalSize, double 
 struct Rects Net_BlobRectsToImageRects(struct Rects rects, Size originalSize, double scalefactor, Size size, Scalar mean, bool swapRB,
                     int ddepth, int dataLayout, int paddingMode, Scalar borderValue) {
     try {
-        std::vector<cv::Rect> _cRects;
+        float xRatio = static_cast<float>(originalSize.width) / static_cast<float>(size.width);
+        float yRatio = static_cast<float>(originalSize.height) / static_cast<float>(size.height);
+
+        Rect* drects = new Rect[rects.length];
         for (int i = 0; i < rects.length; ++i) {
-            _cRects.push_back(cv::Rect(
-                rects.rects[i].x,
-                rects.rects[i].y,
-                rects.rects[i].width,
-                rects.rects[i].height
-            ));
+            drects[i].x = static_cast<int>(rects.rects[i].x * xRatio);
+            drects[i].y = static_cast<int>(rects.rects[i].y * yRatio);
+            drects[i].width = static_cast<int>(rects.rects[i].width * xRatio);
+            drects[i].height = static_cast<int>(rects.rects[i].height * yRatio);
         }
 
-        cv::Scalar sf(scalefactor);
-        cv::Size sz(size.width, size.height);
-        cv::Scalar cm(mean.val1, mean.val2, mean.val3, mean.val4);
-        cv::dnn::DataLayout dl = static_cast<cv::dnn::DataLayout>(dataLayout);
-        cv::dnn::ImagePaddingMode pm = static_cast<cv::dnn::ImagePaddingMode>(paddingMode);
-        cv::Scalar bv(borderValue.val1, borderValue.val2, borderValue.val3, borderValue.val4);
-        cv::dnn::Image2BlobParams params = cv::dnn::Image2BlobParams(sf, sz, cm, swapRB, ddepth, dl, pm);
-
-        std::vector<cv::Rect> detected;
-        params.blobRectsToImageRects(_cRects, detected, cv::Size(originalSize.width, originalSize.height));
-        Rect* drects = new Rect[detected.size()];
-
-        for (size_t i = 0; i < detected.size(); ++i) {
-            Rect r = {detected[i].x, detected[i].y, detected[i].width, detected[i].height};
-            drects[i] = r;
-        }
-
-        Rects ret = {drects, (int)detected.size()};
+        Rects ret = {drects, rects.length};
         return ret;
     } catch(const cv::Exception& e){
         setExceptionInfo(e.code, e.what());
